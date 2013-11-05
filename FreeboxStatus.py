@@ -98,32 +98,19 @@ class FreeboxStatus():
 
 
     def _parseCategory_general( self, line ):
-        groups = line.partition("  ")
-
-        # Si la ligne ne contient pas de clé/valeur
-        if not groups[1]:
-            return
-
-        key, value = groups[0].strip(), groups[2].strip()
-
-        key_mapped = {
+        key_mapper = {
             "Modèle":               "fbx_model",
             "Version du firmware":  "fw_version",
             "Mode de connection":   "connection_mode",
             "Temps depuis la mise en route": "uptime"
-        }.get( key )
-        if not key_mapped:
-            return
-
-        value_parser = {
+        }
+        value_parsers = {
             "fbx_model":        lambda s:s,
             "fw_version":       lambda s: s.split(".")
             "connection_mode":  lambda s:s,
             "uptime":           self._parseUptime
-        }.get( key_mapped )
-        if not value_parser:
-            return
-        self.status["general"][key_mapped] = value_parser( value )
+        }
+        self._parseLine( line, key_mapper, value_parsers, status["general"] )
 
 
     def _parseUptime( self, uptime_str ):
@@ -138,3 +125,61 @@ class FreeboxStatus():
             minutes = groups["hours"].partition()[0]
             seconds = groups["min"].partition()[0]
         )
+    
+
+    def _parseCategory_telephone( self, line ):
+        key_mapper = {
+            "Etat":             "configured",
+            "Etat du combiné":  "online",
+            "Sonnerie":         "ringing"
+        }
+        value_parsers = {
+            "configured":   lambda s: True if s == "Ok" else False,
+            "online":       lambda s: False if s == "Raccroché" else False,
+            "ringing":      lambda s: False if s == "Inactive" else True
+        }
+        self._parseLine( line, key_mapper, value_parsers, status["general"] )
+
+
+    def _parseLine( self, line, key_mapper, value_parsers, cfg_node ):
+        groups = line.partition("  ")
+
+        # Si la ligne ne contient pas de clé/valeur
+        if not groups[1]:
+            return
+
+        key, value = groups[0].strip(), groups[2].strip()
+
+        key_mapper.get( key )
+        if not key_mapped:
+            return
+
+        value_parsers.get( key_mapped )
+        if not value_parser:
+            return
+
+        cfg_node[key_mapped] = value_parser( value )
+
+
+    def _parseCategory_adsl( self, line ):
+        key_mapper = {
+            "Etat":         "ready",
+            "Protocole":    "protocol",
+            "Mode":         "synchro_mode",
+            "Débit ATM":    "synchro_speed",
+            "Atténuation":  "attenuation",
+            "FEC":          "FEC",
+            "CRC":          "CRC",
+            "HEC":          "HEC"
+        }
+        value_parsers = {
+            "ready":        lambda s: True if s == "Showtime" else False,
+            "protocol":     lambda s:s,
+            "synchro_mode": lambda s:s,
+            "synchro_speed":lambda v: self._parseTwoIntValues( v, unit="kb/s", keys=['down','up']),
+            "attenuation":  lambda v: self._parseTwoIntValues( v, unit="dB", keys=['down','up'],
+            "FEC":          lambda v: self._parseTwoIntValues( v, unit=None, keys=['down','up'],
+            "CRC":          lambda v: self._parseTwoIntValues( v, unit=None, keys=['down','up'],
+            "HEC":          lambda v: self._parseTwoIntValues( v, unit=None, keys=['down','up'],
+        }
+        self._parseLine( line, key_mapper, value_parsers, status["general"] )
