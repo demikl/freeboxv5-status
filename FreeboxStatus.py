@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
-import requests
+import urllib2, re, datetime
 
 class FreeboxStatus():
-    def __init__( self, loadData=True ):
+    def __init__( self, loadData=True ):    
         self._registerCategoryParsers()
         self._registerSubCategoryParsers()
         self._razInfos()
@@ -17,28 +17,28 @@ class FreeboxStatus():
             "general":      self._parseCategory_general,
             "telephone":    self._parseCategory_telephone,
             "adsl":         self._parseCategory_adsl,
-            "wifi":         self._parseCategory_wifi,
-            "network":      self._parseCategory_network
+            "wifi":         lambda status: self._notImplemented, #self._parseCategory_wifi,
+            "network":      lambda status: self._notImplemented, #self._parseCategory_network
         }
 
 
     def _registerSubCategoryParsers( self ):
         self._subcategory_parsers = {
-            "history":                  self._parseSubCategory_general_history,
-            "dhcp":                     self._parseSubCategory_network_dhcp,
-            "port_forwarding":          self._parseSubCategory_network_portForwarding,
-            "port_range_forwarding":    self._parseSubCategory_network_portRangeForwarding,
-            "interfaces":               self._parseSubCategory_network_interfaces
+            "history":                  lambda status: self._notImplemented, #self._parseSubCategory_general_history,
+            "dhcp":                     lambda status: self._notImplemented, #self._parseSubCategory_network_dhcp,
+            "port_forwarding":          lambda status: self._notImplemented, #self._parseSubCategory_network_portForwarding,
+            "port_range_forwarding":    lambda status: self._notImplemented, #self._parseSubCategory_network_portRangeForwarding,
+            "interfaces":               lambda status: self._notImplemented, #self._parseSubCategory_network_interfaces
         }
 
 
     def _razInfos( self ):
-        status = {
-            "general" = {}
-            "telephone" = {}
-            "adsl" = { "history":{} }
-            "wifi" = {}
-            "network" = {
+        self.status = {
+            "general": {},
+            "telephone": {},
+            "adsl": { "history":{} },
+            "wifi": {},
+            "network": {
                 "dhcp":{},
                 "port_forwarding":{},
                 "port_range_forwarding":{},
@@ -50,12 +50,13 @@ class FreeboxStatus():
     def update( self ):
         self._razInfos()
         try:
-            r = requests.get("http://mafreebox.free.fr/pub/fbx_info.txt", timeout=1)
-        except requests.exceptions.Timeout:
+            r = urllib2.urlopen("http://mafreebox.free.fr/pub/fbx_info.txt", timeout=2)
+        except:
             return
-        if r.status_code != 200:
+        if r.getcode() != 200:
             return
-        self._parseStatus( r.text.splitlines() )
+        charset = r.headers["Content-Type"].split('charset=')[-1]
+        self._parseStatus( unicode( r.read(), charset ).splitlines() )
 
     
     def _parseStatus( self, status ):
@@ -65,84 +66,87 @@ class FreeboxStatus():
             pos += 1
             # Changement de catégorie
             if line.startswith( "====" ):
-                cat = self._parseCategoryName( status[pos-1] )
+                cat = self._parseCategoryName( status[pos-2] )
                 subcat = None
                 continue
             if line.startswith( " -----" ):
-                subcat = self._parseSubCategoryName( status[pos-1] )
+                subcat = self._parseSubCategoryName( status[pos-2] )
                 continue
-            if subcat:
-                self._subcategory_parsers[subcat]( line )
-            else:  
-                self._category_parsers[cat]( line )
+            try:
+                if subcat:
+                    self._subcategory_parsers[subcat]( line )
+                elif cat:  
+                    self._category_parsers[cat]( line )
+            except AttributeError, e:
+                print e
 
 
     def _parseCategoryName( self, category_fullname ):
         return {
-            "Informations générales :": "general",
-            "Téléphone :": "telephone",
-            "Adsl :": "adsl",
-            "Wifi :": "wifi",
-            "Réseau :": "network"
+            u"Informations générales :": "general",
+            u"Téléphone :": "telephone",
+            u"Adsl :": "adsl",
+            u"Wifi :": "wifi",
+            u"Réseau :": "network"
         }.get( category_fullname.strip() )
 
 
     def _parseSubCategoryName( self, subcategory_fullname ):
         return {
-            "Iournal de connexion adsl :": "history",
-            "Attributions dhcp :": "dhcp",
-            "Redirections de ports :": "port_forwarding",
-            "Redirections de plage de ports :": "port_range_forwarding",
-            "Interfaces réseau :": "interfaces"
+            u"Iournal de connexion adsl :": "history",
+            u"Attributions dhcp :": "dhcp",
+            u"Redirections de ports :": "port_forwarding",
+            u"Redirections de plage de ports :": "port_range_forwarding",
+            u"Interfaces réseau :": "interfaces"
         }.get( subcategory_fullname.strip() )
 
 
     def _parseCategory_general( self, line ):
         key_mapper = {
-            "Modèle":               "fbx_model",
-            "Version du firmware":  "fw_version",
-            "Mode de connection":   "connection_mode",
-            "Temps depuis la mise en route": "uptime"
+            u"Modèle":               "fbx_model",
+            u"Version du firmware":  "fw_version",
+            u"Mode de connection":   "connection_mode",
+            u"Temps depuis la mise en route": "uptime"
         }
         value_parsers = {
-            "fbx_model":        lambda s:s,
-            "fw_version":       lambda s: s.split(".")
-            "connection_mode":  lambda s:s,
-            "uptime":           self._parseUptime
+            u"fbx_model":        lambda s:s,
+            u"fw_version":       lambda s: [ int(v) for v in s.split(".") ],
+            u"connection_mode":  lambda s:s,
+            u"uptime":           self._parseUptime
         }
-        self._parseLine( line, key_mapper, value_parsers, status["general"] )
+        self._parseLine( line, key_mapper, value_parsers, self.status["general"] )
 
 
     def _parseUptime( self, uptime_str ):
-        regex = "(?P<days>\d+ jours?)? (?P<hours>\d+ heures?)? (?P<min>\d+ minutes?)"
+        regex = "(?P<days>\d+ jours?,)? (?P<hours>\d+ heures?,)? (?P<min>\d+ minutes?)"
         res = re.match( regex, uptime_str )
         if not res:
             return None
         groups = res.groupdict()
-          {'days': '5 jours', 'hours': '1 heure', 'min': '26 minutes'}
-        return datetime.timedelta()
-            hours   = groups["days"].partition()[0]
-            minutes = groups["hours"].partition()[0]
-            seconds = groups["min"].partition()[0]
+        #{'days': '5 jours', 'hours': '1 heure', 'min': '26 minutes'}
+        return datetime.timedelta(
+            days    = int(groups["days"].partition(" ")[0]),
+            hours   = int(groups["hours"].partition(" ")[0]),
+            minutes = int(groups["min"].partition(" ")[0])
         )
     
 
     def _parseCategory_telephone( self, line ):
         key_mapper = {
-            "Etat":             "configured",
-            "Etat du combiné":  "online",
-            "Sonnerie":         "ringing"
+            u"Etat":             "configured",
+            u"Etat du combiné":  "online",
+            u"Sonnerie":         "ringing"
         }
         value_parsers = {
-            "configured":   lambda s: True if s == "Ok" else False,
-            "online":       lambda s: False if s == "Raccroché" else False,
-            "ringing":      lambda s: False if s == "Inactive" else True
+            u"configured":   lambda s: True if s == u"Ok" else False,
+            u"online":       lambda s: False if s == u"Raccroché" else False,
+            u"ringing":      lambda s: False if s == u"Inactive" else True
         }
-        self._parseLine( line, key_mapper, value_parsers, status["general"] )
+        self._parseLine( line, key_mapper, value_parsers, self.status["telephone"] )
 
 
     def _parseLine( self, line, key_mapper, value_parsers, cfg_node ):
-        groups = line.partition("  ")
+        groups = line.strip().partition("  ")
 
         # Si la ligne ne contient pas de clé/valeur
         if not groups[1]:
@@ -150,11 +154,11 @@ class FreeboxStatus():
 
         key, value = groups[0].strip(), groups[2].strip()
 
-        key_mapper.get( key )
+        key_mapped = key_mapper.get( key )
         if not key_mapped:
             return
 
-        value_parsers.get( key_mapped )
+        value_parser = value_parsers.get( key_mapped )
         if not value_parser:
             return
 
@@ -163,23 +167,40 @@ class FreeboxStatus():
 
     def _parseCategory_adsl( self, line ):
         key_mapper = {
-            "Etat":         "ready",
-            "Protocole":    "protocol",
-            "Mode":         "synchro_mode",
-            "Débit ATM":    "synchro_speed",
-            "Atténuation":  "attenuation",
-            "FEC":          "FEC",
-            "CRC":          "CRC",
-            "HEC":          "HEC"
+            u"Etat":         "ready",
+            u"Protocole":    "protocol",
+            u"Mode":         "synchro_mode",
+            u"Débit ATM":    "synchro_speed",
+            u"Atténuation":  "attenuation",
+            u"FEC":          "FEC",
+            u"CRC":          "CRC",
+            u"HEC":          "HEC"
         }
         value_parsers = {
-            "ready":        lambda s: True if s == "Showtime" else False,
-            "protocol":     lambda s:s,
-            "synchro_mode": lambda s:s,
-            "synchro_speed":lambda v: self._parseTwoIntValues( v, unit="kb/s", keys=['down','up']),
-            "attenuation":  lambda v: self._parseTwoIntValues( v, unit="dB", keys=['down','up'],
-            "FEC":          lambda v: self._parseTwoIntValues( v, unit=None, keys=['down','up'],
-            "CRC":          lambda v: self._parseTwoIntValues( v, unit=None, keys=['down','up'],
-            "HEC":          lambda v: self._parseTwoIntValues( v, unit=None, keys=['down','up'],
+            u"ready":        lambda s: True if s == "Showtime" else False,
+            u"protocol":     lambda s:s,
+            u"synchro_mode": lambda s:s,
+            u"synchro_speed":lambda v: self._parseTwoValues( v, unit="kb/s", keys=['down','up'], cast=int),
+            u"attenuation":  lambda v: self._parseTwoValues( v, unit="dB",   keys=['down','up'], cast = float),
+            u"FEC":          lambda v: self._parseTwoValues( v, unit=None,   keys=['down','up'], cast = int),
+            u"CRC":          lambda v: self._parseTwoValues( v, unit=None,   keys=['down','up'], cast = int),
+            u"HEC":          lambda v: self._parseTwoValues( v, unit=None,   keys=['down','up'], cast = int),
         }
-        self._parseLine( line, key_mapper, value_parsers, status["general"] )
+        self._parseLine( line, key_mapper, value_parsers, self.status["adsl"] )
+
+
+    def _parseTwoValues( self, values, unit, keys, cast=lambda s:s ):
+        value1, _, value2 = [ v.strip() for v in values.partition("  ") ]
+        if unit:
+            value1, value2 = [ v.partition(" ")[0] for v in [ value1, value2 ] ]
+        return { keys[0]:cast(value1), keys[1]:cast(value2) }
+
+
+
+
+
+
+
+
+    def _notImplemented( self ):
+        raise NotImplemented()
