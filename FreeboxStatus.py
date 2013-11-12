@@ -18,7 +18,7 @@ class FreeboxStatus():
             "telephone":    self._parseCategory_telephone,
             "adsl":         self._parseCategory_adsl,
             "wifi":         self._parseCategory_wifi,
-            "network":      lambda status: self._notImplemented, #self._parseCategory_network
+            "network":      self._parseCategory_network
         }
 
 
@@ -118,7 +118,7 @@ class FreeboxStatus():
             u"connection_mode":  lambda s:s,
             u"uptime":           self._parseUptime
         }
-        self._parseLine( line, key_mapper, value_parsers, self.status["general"] )
+        self._parseLineWithStaticKey( line, key_mapper, value_parsers, self.status["general"] )
 
 
     def _parseUptime( self, uptime_str ):
@@ -146,10 +146,10 @@ class FreeboxStatus():
             u"online":       lambda s: False if s == u"Raccroché" else False,
             u"ringing":      lambda s: False if s == u"Inactive" else True
         }
-        self._parseLine( line, key_mapper, value_parsers, self.status["telephone"] )
+        self._parseLineWithStaticKey( line, key_mapper, value_parsers, self.status["telephone"] )
 
 
-    def _parseLine( self, line, key_mapper, value_parsers, cfg_node ):
+    def _parseLineWithStaticKey( self, line, key_mapper, value_parsers, cfg_node ):
         groups = line.strip().partition("  ")
 
         # Si la ligne ne contient pas de clé/valeur
@@ -190,7 +190,7 @@ class FreeboxStatus():
             u"CRC":          lambda v: self._parseTwoValues( v, unit=None,   keys=['down','up'], cast = int),
             u"HEC":          lambda v: self._parseTwoValues( v, unit=None,   keys=['down','up'], cast = int),
         }
-        self._parseLine( line, key_mapper, value_parsers, self.status["adsl"] )
+        self._parseLineWithStaticKey( line, key_mapper, value_parsers, self.status["adsl"] )
 
 
     def _parseTwoValues( self, values, unit, keys, cast=lambda s:s ):
@@ -208,8 +208,8 @@ class FreeboxStatus():
             u"État du réseau":  "isActive",
             u"Ssid":            "ssid",
             u"Type de clé":     "key_algorithm",
-            u"FreeWifi":        "isFreeWifiActive",
-            u"FreeWifi Secure": "isFreeWifiSecureActive"
+            u"FreeWifi":        "hasFreeWifi",
+            u"FreeWifi Secure": "hasFreeWifiSecure"
         }
         value_parsers = {
             "state":                    lambda s:s,
@@ -221,8 +221,37 @@ class FreeboxStatus():
             "isFreeWifiActive":         lambda s: (s == "Actif"),
             "isFreeWifiSecureActive":   lambda s: (s == "Actif")
         }
-        self._parseLine( line, key_mapper, value_parsers, self.status["wifi"] )
+        self._parseLineWithStaticKey( line, key_mapper, value_parsers, self.status["wifi"] )
 
+
+    def _parseCategory_network( self, line ):
+        key_mapper = {
+            u"Adresse MAC Freebox":         "mac_address",
+            u"Adresse IP":                  "public_ip",
+            u"IPv6":                        "hasIPv6",
+            u"Mode routeur":                "routerMode",
+            u"Adresse IP privée":           "private_ip",
+            u"Adresse IP DMZ":              "DMZ_ip",
+            u"Adresse IP Freeplayer":       "freeplayer_ip",
+            u"Réponse au ping":             "isRespondingToPing",
+            u"Proxy Wake On Lan":           "hasWakeOnLanProxy",
+            u"Serveur DHCP":                "hasDHCPServer",
+            u"Plage d'adresses dynamique":  "dynamic_ip_range"
+        }
+        value_parsers = {
+            "mac_adress":                   lambda s:s,
+            "public_ip":                    lambda s:s,
+            "hasIPv6":                      lambda s: (s == u"Activé" ),
+            "routerMode":                   lambda s: (s == u"Activé" ),
+            "private_ip":                   lambda s:s,
+            "DMZ_ip":                       lambda s:s,
+            "freeplayer_ip":                lambda s:s,
+            "isRespondingToPing":           lambda s: ( s == "Activé" ),
+            "hasWakeOnLanProxy":            lambda s: ( s == "Activé" ),
+            "hasDHCPServer":                lambda s: ( s == "Activé" ),
+            "dynamic_ip_range":             lambda s: s.partition(" - ")[0:3:2]
+        }
+        self._parseLineWithStaticKey( line, key_mapper, value_parsers, self.status["wifi"] )
 
 
 
