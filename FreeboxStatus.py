@@ -246,9 +246,9 @@ class FreeboxStatus():
             "private_ip":                   lambda s:s,
             "DMZ_ip":                       lambda s:s,
             "freeplayer_ip":                lambda s:s,
-            "isRespondingToPing":           lambda s: ( s == "Activé" ),
-            "hasWakeOnLanProxy":            lambda s: ( s == "Activé" ),
-            "hasDHCPServer":                lambda s: ( s == "Activé" ),
+            "isRespondingToPing":           lambda s: ( s == u"Activé" ),
+            "hasWakeOnLanProxy":            lambda s: ( s == u"Activé" ),
+            "hasDHCPServer":                lambda s: ( s == u"Activé" ),
             "dynamic_ip_range":             lambda s: s.partition(" - ")[0:3:2]
         }
         self._parseLineWithStaticKey( line, key_mapper, value_parsers, self.status["wifi"] )
