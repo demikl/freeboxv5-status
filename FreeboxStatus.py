@@ -4,12 +4,12 @@
 import urllib2, re, datetime
 
 class FreeboxStatus():
-    def __init__( self, loadData=True ):    
+    def __init__( self, loadData=True, externalDataFeed=None ):    
         self._registerCategoryParsers()
         self._registerSubCategoryParsers()
         self._razInfos()
         if loadData:
-            self.update()
+            self.update( externalDataFeed )
 
 
     def _registerCategoryParsers( self ):
@@ -17,7 +17,7 @@ class FreeboxStatus():
             "general":      self._parseCategory_general,
             "telephone":    self._parseCategory_telephone,
             "adsl":         self._parseCategory_adsl,
-            "wifi":         lambda status: self._notImplemented, #self._parseCategory_wifi,
+            "wifi":         self._parseCategory_wifi,
             "network":      lambda status: self._notImplemented, #self._parseCategory_network
         }
 
@@ -47,16 +47,20 @@ class FreeboxStatus():
         }
 
 
-    def update( self ):
+    def update( self, externalDataFeed=None ):
         self._razInfos()
-        try:
-            r = urllib2.urlopen("http://mafreebox.free.fr/pub/fbx_info.txt", timeout=2)
-        except:
-            return
-        if r.getcode() != 200:
-            return
-        charset = r.headers["Content-Type"].split('charset=')[-1]
-        self._parseStatus( unicode( r.read(), charset ).splitlines() )
+        if not externalDataFeed:
+            try:
+                r = urllib2.urlopen("http://mafreebox.free.fr/pub/fbx_info.txt", timeout=2)
+            except:
+                return
+            if r.getcode() != 200:
+                return
+            charset = r.headers["Content-Type"].split('charset=')[-1]
+            feed = unicode( r.read(), charset )
+        else:
+            feed = unicode( externalDataFeed.read(), 'ISO-8859-1' )
+        self._parseStatus( feed.splitlines() )
 
     
     def _parseStatus( self, status ):
@@ -196,7 +200,28 @@ class FreeboxStatus():
         return { keys[0]:cast(value1), keys[1]:cast(value2) }
 
 
-
+    def _parseCategory_wifi( self, line ):
+        key_mapper = {
+            u"Etat":            "state",
+            u"Modèle":          "model",
+            u"Canal":           "channel",
+            u"État du réseau":  "isActive",
+            u"Ssid":            "ssid",
+            u"Type de clé":     "key_algorithm",
+            u"FreeWifi":        "isFreeWifiActive",
+            u"FreeWifi Secure": "isFreeWifiSecureActive"
+        }
+        value_parsers = {
+            "state":                    lambda s:s,
+            "model":                    lambda s:s,
+            "channel":                  lambda s: int(s),
+            "isActive":                 lambda s: (s == u"Activé" ),
+            "ssid":                     lambda s:s,
+            "key_algorithm":            lambda s:s,
+            "isFreeWifiActive":         lambda s: (s == "Actif"),
+            "isFreeWifiSecureActive":   lambda s: (s == "Actif")
+        }
+        self._parseLine( line, key_mapper, value_parsers, self.status["wifi"] )
 
 
 
