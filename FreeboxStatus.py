@@ -28,7 +28,7 @@ class FreeboxStatus():
             "dhcp":                     lambda status: self._notImplemented, #self._parseSubCategory_network_dhcp,
             "port_forwarding":          lambda status: self._notImplemented, #self._parseSubCategory_network_portForwarding,
             "port_range_forwarding":    lambda status: self._notImplemented, #self._parseSubCategory_network_portRangeForwarding,
-            "interfaces":               lambda status: self._notImplemented, #self._parseSubCategory_network_interfaces
+            "interfaces":               self._parseSubCategory_network_interfaces
         }
 
 
@@ -193,11 +193,20 @@ class FreeboxStatus():
         self._parseLineWithStaticKey( line, key_mapper, value_parsers, self.status["adsl"] )
 
 
-    def _parseTwoValues( self, values, unit, keys, cast=lambda s:s ):
+    def _parseTwoValues( self, values, unit, keys, cast=lambda s:s, withStatus=False ):
+        if withStatus:
+            # Format: "    status     value1 unit        value2 unit  "
+            status, sep, values = values.partition("  ")
+            if not sep:
+                return { "status": status.strip(), keys[0]:None, keys[1]:None }
+            values = values.strip()
         value1, _, value2 = [ v.strip() for v in values.partition("  ") ]
         if unit:
             value1, value2 = [ v.partition(" ")[0] for v in [ value1, value2 ] ]
-        return { keys[0]:cast(value1), keys[1]:cast(value2) }
+        res = { keys[0]:cast(value1), keys[1]:cast(value2) }
+        if withStatus:
+            res.update( {"status":status} )
+        return res
 
 
     def _parseCategory_wifi( self, line ):
@@ -254,6 +263,20 @@ class FreeboxStatus():
         self._parseLineWithStaticKey( line, key_mapper, value_parsers, self.status["wifi"] )
 
 
+    def _parseSubCategory_network_interfaces( self, line ):
+        key_mapper = {
+            u"WAN":         "WAN",
+            u"Ethernet":    "ethernet",
+            u"USB":         "USB",
+            u"Switch":      "switch"
+        }
+        value_parsers = {
+            "WAN":          lambda v: self._parseTwoValues( v, unit="ko/s", keys=['down','up'], cast=int, withStatus=True ),
+            "ethernet":     lambda v: self._parseTwoValues( v, unit="ko/s", keys=['down','up'], cast=int, withStatus=True ),
+            "USB":          lambda v: self._parseTwoValues( v, unit="ko/s", keys=['down','up'], cast=int, withStatus=True ),
+            "switch":       lambda v: self._parseTwoValues( v, unit="ko/s", keys=['down','up'], cast=int, withStatus=True )
+        }
+        self._parseLineWithStaticKey( line, key_mapper, value_parsers, self.status["network"]["interfaces"] )
 
 
     def _notImplemented( self ):
