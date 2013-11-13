@@ -5,6 +5,8 @@ Récupération du statut de la Freebox V5 en Python
 
 Python wrapper for Freebox V5 status
 
+Firmware freebox >=1.5.18 requis, pensez à mettre à jour votre Freebox.
+
 L'état de la Freebox est accessible via un dictionnaire Python.
 
 Exemple d'usage ::
