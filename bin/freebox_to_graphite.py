@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
-import freebox_v5_status
+import freebox_v5_status.freeboxstatus
 import statsd
 
 metrics_prefix = "freebox"
-fbx = freebox_v5_status.FreeboxStatus()
+fbx = freeboxstatus.FreeboxStatus()
 while True:
     timer = statsd.Timer(metrics_prefix)
     timer.start()

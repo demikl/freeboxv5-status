@@ -260,7 +260,7 @@ class FreeboxStatus():
             "hasDHCPServer":                lambda s: ( s == u"Activé" ),
             "dynamic_ip_range":             lambda s: s.partition(" - ")[0:3:2]
         }
-        self._parseLineWithStaticKey( line, key_mapper, value_parsers, self.status["wifi"] )
+        self._parseLineWithStaticKey( line, key_mapper, value_parsers, self.status["network"] )
 
 
     def _parseSubCategory_network_interfaces( self, line ):
