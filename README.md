@@ -10,10 +10,10 @@ L'état de la Freebox est accessible via un dictionnaire Python.
 Exemple d'usage :
 
 ```python
-import FreeboxStatus
+import freebox_v5_status
 import pprint
 
-fbx = FreeboxStatus.FreeboxStatus( )
+fbx = freebox_v5_status.FreeboxStatus()
 pprint.pprint(fbx.status)
 ```
 
