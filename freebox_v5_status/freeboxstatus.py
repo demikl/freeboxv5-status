@@ -97,7 +97,7 @@ class FreeboxStatus():
 
     def _parseSubCategoryName( self, subcategory_fullname ):
         return {
-            u"Iournal de connexion adsl :": "history",
+            u"Journal de connexion adsl :": "history",
             u"Attributions dhcp :": "dhcp",
             u"Redirections de ports :": "port_forwarding",
             u"Redirections de plage de ports :": "port_range_forwarding",
