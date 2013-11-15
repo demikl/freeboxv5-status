@@ -1,2 +1,2 @@
-include *.txt
-recursive-include docs *.txt *.log
+include *.txt *.md
+recursive-include docs *.log
