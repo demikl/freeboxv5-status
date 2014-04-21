@@ -5,7 +5,7 @@ import freebox_v5_status.freeboxstatus
 import statsd
 
 metrics_prefix = "freebox"
-fbx = freeboxstatus.FreeboxStatus()
+fbx = freebox_v5_status.freeboxstatus.FreeboxStatus()
 while True:
     timer = statsd.Timer(metrics_prefix)
     timer.start()
@@ -21,7 +21,8 @@ while True:
     gauge.send("network.ethernet.up",       fbx.status["network"]["interfaces"]["ethernet"]["up"])
     gauge.send("network.switch.down",       fbx.status["network"]["interfaces"]["switch"]["down"])
     gauge.send("network.switch.up",         fbx.status["network"]["interfaces"]["switch"]["up"])
+    c = statsd.Counter(metrics_prefix)
     c.increment("telephone.sonnerie", 1 if fbx.status["telephone"]["ringing"] else 0)
     c.increment("telephone.en_ligne", 1 if fbx.status["telephone"]["online"] else 0)
 
-    time.sleep(1)
+    time.sleep(30)
