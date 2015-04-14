@@ -4,7 +4,7 @@
 import urllib2, re, datetime
 
 class FreeboxStatus():
-    def __init__( self, loadData=True, externalDataFeed=None ):    
+    def __init__( self, loadData=True, externalDataFeed=None ):
         self._registerCategoryParsers()
         self._registerSubCategoryParsers()
         self._razInfos()
@@ -62,7 +62,7 @@ class FreeboxStatus():
             feed = unicode( externalDataFeed.read(), 'ISO-8859-1' )
         self._parseStatus( feed.splitlines() )
 
-    
+
     def _parseStatus( self, status ):
         cat, subcat = None, None
         pos = 0
@@ -79,7 +79,7 @@ class FreeboxStatus():
             try:
                 if subcat:
                     self._subcategory_parsers[subcat]( line )
-                elif cat:  
+                elif cat:
                     self._category_parsers[cat]( line )
             except AttributeError, e:
                 print e
@@ -133,7 +133,7 @@ class FreeboxStatus():
             hours   = int(groups["hours"].partition(" ")[0]),
             minutes = int(groups["min"].partition(" ")[0])
         )
-    
+
 
     def _parseCategory_telephone( self, line ):
         key_mapper = {
@@ -143,7 +143,7 @@ class FreeboxStatus():
         }
         value_parsers = {
             u"configured":   lambda s: True if s == u"Ok" else False,
-            u"online":       lambda s: False if s == u"Raccroché" else False,
+            u"online":       lambda s: False if s == u"Raccroché" else True,
             u"ringing":      lambda s: False if s == u"Inactive" else True
         }
         self._parseLineWithStaticKey( line, key_mapper, value_parsers, self.status["telephone"] )
