@@ -122,16 +122,17 @@ class FreeboxStatus():
 
 
     def _parseUptime( self, uptime_str ):
-        regex = "(?P<days>\d+ jours?,)? (?P<hours>\d+ heures?,)? (?P<min>\d+ minutes?)"
+        regex = "(?P<days>\d+ jours?, )?(?P<hours>\d+ heures?, )?(?P<min>\d+ minutes?)"
         res = re.match( regex, uptime_str )
         if not res:
             return None
-        groups = res.groupdict()
+        groups = dict(map(lambda (k,v): (k,(int(v.partition(" ")[0]) \
+                if v is not None else 0)) , res.groupdict().iteritems()))
         #{'days': '5 jours', 'hours': '1 heure', 'min': '26 minutes'}
         return datetime.timedelta(
-            days    = int(groups["days"].partition(" ")[0]),
-            hours   = int(groups["hours"].partition(" ")[0]),
-            minutes = int(groups["min"].partition(" ")[0])
+            days    = groups["days"],
+            hours   = groups["hours"],
+            minutes = groups["min"]
         )
 
 
