@@ -1,1 +1,1 @@
-v1.0.1, 2014-04-21 -- Added new example scriptv1.0.0, 2013-11-13 -- Initial release.
+v1.0.3, 2015-11-13 -- Uptime parsing ; empty link statusv1.0.2, 2014-??-?? -- ???v1.0.1, 2014-04-21 -- Added new example scriptv1.0.0, 2013-11-13 -- Initial release.

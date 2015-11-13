@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='freebox_v5_status',
-    version='1.0.2',
+    version='1.0.3',
     author='Mickael Le Baillif',
     author_email='mickael.le.baillif@gmail.com',
     packages=['freebox_v5_status'],

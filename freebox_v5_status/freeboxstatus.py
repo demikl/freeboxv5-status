@@ -202,6 +202,13 @@ class FreeboxStatus():
                 return { "status": status.strip(), keys[0]:None, keys[1]:None }
             values = values.strip()
         value1, _, value2 = [ v.strip() for v in values.partition("  ") ]
+
+        # si pas d'etat de lien, alors tout a ete decale
+        if not value2:
+            value2 = value1
+            value1 = status
+            status = "No status"
+
         if unit:
             value1, value2 = [ v.partition(" ")[0] for v in [ value1, value2 ] ]
         res = { keys[0]:cast(value1), keys[1]:cast(value2) }
