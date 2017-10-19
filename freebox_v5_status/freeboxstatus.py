@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import urllib2, re, datetime
+import datetime
+import re
+import six.moves.urllib as urllib
 
 class FreeboxStatus():
     def __init__( self, loadData=True, externalDataFeed=None ):
@@ -51,16 +53,18 @@ class FreeboxStatus():
         self._razInfos()
         if not externalDataFeed:
             try:
-                r = urllib2.urlopen("http://mafreebox.free.fr/pub/fbx_info.txt", timeout=2)
-            except:
+                r = urllib.request.urlopen("http://mafreebox.free.fr/pub/fbx_info.txt", timeout=2)
+            except Exception as e:
+                print(e)
                 return
             if r.getcode() != 200:
                 return
             charset = r.headers["Content-Type"].split('charset=')[-1]
-            feed = unicode( r.read(), charset )
+            feed = r.read().decode(charset)
         else:
-            feed = unicode( externalDataFeed.read(), 'ISO-8859-1' )
+            feed = externalDataFeed.read().decode('ISO-8859-1')
         self._parseStatus( feed.splitlines() )
+        return True
 
 
     def _parseStatus( self, status ):
@@ -81,8 +85,8 @@ class FreeboxStatus():
                     self._subcategory_parsers[subcat]( line )
                 elif cat:
                     self._category_parsers[cat]( line )
-            except AttributeError, e:
-                print e
+            except AttributeError as e:
+                print(e)
 
 
     def _parseCategoryName( self, category_fullname ):
@@ -122,18 +126,11 @@ class FreeboxStatus():
 
 
     def _parseUptime( self, uptime_str ):
-        regex = "(?P<days>\d+ jours?, )?(?P<hours>\d+ heures?, )?(?P<min>\d+ minutes?)"
-        res = re.match( regex, uptime_str )
-        if not res:
-            return None
-        groups = dict(map(lambda (k,v): (k,(int(v.partition(" ")[0]) \
-                if v is not None else 0)) , res.groupdict().iteritems()))
-        #{'days': '5 jours', 'hours': '1 heure', 'min': '26 minutes'}
-        return datetime.timedelta(
-            days    = groups["days"],
-            hours   = groups["hours"],
-            minutes = groups["min"]
-        )
+        delta = {'days': 'jours', 'hours': 'heures', 'minutes': 'minutes'}
+        for k, v in delta.items():
+            r = re.search('(\d+) ' + v, uptime_str)
+            delta[k] = int(r.group(1)) if r else 0
+        return datetime.timedelta(**delta)
 
 
     def _parseCategory_telephone( self, line ):
