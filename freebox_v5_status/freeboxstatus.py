@@ -174,6 +174,7 @@ class FreeboxStatus():
             u"Mode":         "synchro_mode",
             u"Débit ATM":    "synchro_speed",
             u"Atténuation":  "attenuation",
+            u"Marge de bruit": "noise_margin",
             u"FEC":          "FEC",
             u"CRC":          "CRC",
             u"HEC":          "HEC"
@@ -184,9 +185,10 @@ class FreeboxStatus():
             u"synchro_mode": lambda s:s,
             u"synchro_speed":lambda v: self._parseTwoValues( v, unit="kb/s", keys=['down','up'], cast=int),
             u"attenuation":  lambda v: self._parseTwoValues( v, unit="dB",   keys=['down','up'], cast = float),
+            u"noise_margin": lambda v: self._parseTwoValues( v, unit="dB",   keys=['down','up'], cast = float),
             u"FEC":          lambda v: self._parseTwoValues( v, unit=None,   keys=['down','up'], cast = int),
             u"CRC":          lambda v: self._parseTwoValues( v, unit=None,   keys=['down','up'], cast = int),
-            u"HEC":          lambda v: self._parseTwoValues( v, unit=None,   keys=['down','up'], cast = int),
+            u"HEC":          lambda v: self._parseTwoValues( v, unit=None,   keys=['down','up'], cast = int)
         }
         self._parseLineWithStaticKey( line, key_mapper, value_parsers, self.status["adsl"] )
 
