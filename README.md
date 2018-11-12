@@ -1,6 +1,9 @@
 freeboxv5-status
 ----------------
 
+[![CircleCI](https://circleci.com/gh/demikl/freeboxv5-status.svg?style=svg)](https://circleci.com/gh/demikl/freeboxv5-status)
+[![codecov](https://codecov.io/gh/demikl/freeboxv5-status/branch/master/graph/badge.svg)](https://codecov.io/gh/demikl/freeboxv5-status)
+
 Récupération du statut de la Freebox V5 en Python
 
 Python wrapper for Freebox V5 status
