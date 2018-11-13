@@ -176,7 +176,7 @@ jobs:
       - run:
           name: install python dependencies
           command: |
-            python -m venv venv
+            virtualenv venv
             . venv/bin/activate
             make dev
 
