@@ -176,20 +176,20 @@ jobs:
       - run:
           name: install python dependencies
           command: |
-            mkdir venv
-            virtualenv venv
-            . venv/bin/activate
+            mkdir -p venv27
+            virtualenv venv27
+            . venv27/bin/activate
             make dev
 
       - save_cache:
           key: v1-dependency-cache-{{ checksum "setup.py" }}-{{ checksum "Makefile" }}
           paths:
-            - "venv"
+            - "venv27"
 
       - run:
           name: run tests
           command: |
-            . venv/bin/activate
+            . venv27/bin/activate
             make test
             codecov
 
